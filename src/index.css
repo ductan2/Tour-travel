@@ -1,0 +1,15 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+body{
+    background-color: rgb(240, 253, 244); 
+}
+.line::after,.line::before{
+    content: "";
+    display: block;
+    background: #C6D2D9;
+    width: 100%;
+    height: 1px;
+}
