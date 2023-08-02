@@ -1,20 +1,33 @@
 import { useState } from "react";
 import bg from "../assets/day66travelx2.png";
-
 import { AiFillEyeInvisible, AiFillEye } from "react-icons/ai";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { AuthGoogle } from "../component/AuthGoogle";
+import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import {
+   getAuth,
+   createUserWithEmailAndPassword,
+   updateProfile,
+} from "firebase/auth";
+import { toast } from "react-toastify";
 
+import { db } from "../config/firebase";
+import { Loading } from "../component/Loading";
 export const SignUp = () => {
    const [formData, setFormData] = useState({
+      fullname: "",
       email: "",
       password: "",
       confirmPassword: "",
    });
+   const { fullname, email, password } = formData;
+   const navigate = useNavigate();
    const [showPassword, setShowPassword] = useState({
       confirmPassword: true,
       password: true,
    });
+   const [isLoading, setIsLoading] = useState(false);
+
    const handleSetValue = (e) => {
       setFormData((prevstate) => ({
          ...prevstate,
@@ -27,7 +40,41 @@ export const SignUp = () => {
          [passwordField]: !prevState[passwordField],
       }));
    };
-   console.log(showPassword.confirmPassword, showPassword.password);
+
+   const handleSubmit = (e) => {
+      e.preventDefault();
+      setIsLoading(true);
+      if (showPassword.password === showPassword.confirmPassword) {
+         const auth = getAuth();
+         createUserWithEmailAndPassword(auth, email, password)
+            .then(async (userCredential) => {
+               updateProfile(auth.currentUser, {
+                  displayName: fullname,
+               });
+               const user = userCredential.user;
+               const valueUser = { ...formData };
+
+               delete valueUser.password;
+               delete valueUser.confirmPassword;
+               valueUser.timestamp = serverTimestamp();
+               await setDoc(doc(db, "users", user.uid), valueUser);
+               setTimeout(() => {
+                  toast.success("Login successfully!");
+                  setIsLoading(false);
+                  navigate("/");
+               }, 700);
+            })
+            .catch((error) => {
+               // const errorCode = error.code;
+               const errorMessage = error.message;
+               toast.error(errorMessage);
+               setIsLoading(false);
+            });
+      } else {
+         toast.error("Confirm password is not match");
+         setIsLoading(false);
+      }
+   };
    return (
       <section>
          <h1 className="text-3xl text-center mt-20 font-bold text-[#007549]">
@@ -41,7 +88,23 @@ export const SignUp = () => {
                <h1 className="text-2xl font-semibold mb-10 text-[#029664]">
                   Welcome Back!
                </h1>
-               <form action="" className="text-base font-semibold">
+               <form
+                  action=""
+                  onSubmit={handleSubmit}
+                  className="text-base font-semibold"
+               >
+                  <div className="form-control mb-5 ">
+                     <label htmlFor="email">Fullname</label>
+                     <input
+                        className="w-full mt-2 px-5 py-2 border-[1px] outline-none ease-in-out focus-visible:border-green-400  rounded-lg"
+                        value={formData.fullname}
+                        type="text"
+                        name="fullname"
+                        id="fullname"
+                        placeholder="Fullname"
+                        onChange={(e) => handleSetValue(e)}
+                     />
+                  </div>
                   <div className="form-control mb-5 ">
                      <label htmlFor="email">Email</label>
                      <input
@@ -115,7 +178,7 @@ export const SignUp = () => {
                      </p>
                   </div>
                   <button className="bg-[#029664] ease-in-out hover:opacity-80 shadow-lg text-white font-semibold w-full mt-14 py-3 rounded-lg">
-                     Register
+                     {!isLoading ? "Register" : <Loading></Loading>}
                   </button>
                   <div className="flex items-center justify-center line my-5">
                      <span className="text-center font-semibold px-1">OR</span>

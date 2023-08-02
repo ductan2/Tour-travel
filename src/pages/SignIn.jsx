@@ -2,8 +2,11 @@ import { useState } from "react";
 import bg from "../assets/day66travelx2.png";
 
 import { AiFillEyeInvisible, AiFillEye } from "react-icons/ai";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { AuthGoogle } from "../component/AuthGoogle";
+import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
+import { toast } from "react-toastify";
+import { Loading } from "../component/Loading";
 
 export const SignIn = () => {
    const [formData, setFormData] = useState({
@@ -11,12 +14,45 @@ export const SignIn = () => {
       password: "",
    });
    const [showPassword, setShowPassword] = useState(true);
+   const { email, password } = formData;
+   const [isLoading, setIsLoading] = useState(false);
+
+   const navigate = useNavigate();
+
    const handleSetValue = (e) => {
       setFormData((prevstate) => ({
          ...prevstate,
          [e.target.name]: e.target.value,
       }));
    };
+
+   const handleSubmit = (e) => {
+      e.preventDefault();
+      if (email === "" || password === "") {
+         toast.error("Fields is not empty!");
+         return ;
+      }
+      setIsLoading(true);
+      const auth = getAuth();
+      signInWithEmailAndPassword(auth, email, password)
+         .then((userCredential) => {
+            // Signed in
+            const user = userCredential.user;
+            if (user) {
+               setTimeout(() => {
+                  toast.success("Login successfully!");
+                  setIsLoading(false);
+                  navigate("/");
+               }, 1000);
+            }
+         })
+         .catch((error) => {
+            console.log(error);
+            toast.error("Login failure");
+            setIsLoading(false);
+         });
+   };
+
    return (
       <section>
          <h1 className="text-3xl text-center mt-20 font-bold text-[#007549]">
@@ -30,7 +66,11 @@ export const SignIn = () => {
                <h1 className="text-2xl font-semibold mb-10 text-[#029664]">
                   Welcome Back!
                </h1>
-               <form action="" className="text-base font-semibold">
+               <form
+                  action=""
+                  onSubmit={handleSubmit}
+                  className="text-base font-semibold"
+               >
                   <div className="form-control mb-5 ">
                      <label htmlFor="email">Email</label>
                      <input
@@ -80,14 +120,12 @@ export const SignIn = () => {
                      </p>
                   </div>
                   <button className="bg-[#029664] ease-in-out hover:opacity-80 shadow-lg text-white font-semibold w-full mt-14 py-3 rounded-lg">
-                     Login
+                     {!isLoading ? "Login" : <Loading></Loading>}
                   </button>
                   <div className="flex items-center justify-center line my-5">
                      <span className="text-center font-semibold px-1">OR</span>
                   </div>
-                  <AuthGoogle>
-                     
-                  </AuthGoogle>
+                  <AuthGoogle></AuthGoogle>
                </form>
             </div>
          </div>
